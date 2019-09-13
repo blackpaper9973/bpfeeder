@@ -1,6 +1,7 @@
 import bpfeeder
 from yahoofinancials import YahooFinancials
 import pandas as pd
+from bpfeeder.utils import deep_extend, find_key_by_value
 
 hist_fields_dct = {
     "DATE": "formatted_date",
@@ -18,10 +19,10 @@ time_interval_dct = {
     "1M": "monethly"
 }
 
-class Yahoo(bpfeeder.Feeder):
+class yahoo(bpfeeder.Feeder):
 
     def get_ohlcv(self, symbol, params={}):
-        custom_params = self.deep_extend(self.ohlcv_headers, params)
+        custom_params = deep_extend(self.ohlcv_headers, params)
         headers = {
             'symbol': symbol,
             'data_fields': custom_params['data_fields'],
@@ -29,7 +30,7 @@ class Yahoo(bpfeeder.Feeder):
             'frequency': time_interval_dct[custom_params['frequency']],
         }
 
-        params = self.deep_extend(custom_params, headers)
+        params = deep_extend(custom_params, headers)
         return self._get_ohlcv(params)
 
     def _get_ohlcv(self, params):
@@ -50,7 +51,7 @@ class Yahoo(bpfeeder.Feeder):
         return df
 
     def get_events(self, symbol, params={}):
-        custom_params = self.deep_extend(self.events_headers, params)
+        custom_params = deep_extend(self.events_headers, params)
         headers = {
             'symbol': symbol,
             'data_fields': custom_params['data_fields'],
@@ -58,7 +59,7 @@ class Yahoo(bpfeeder.Feeder):
             'frequency': 'daily'
         }
 
-        params = self.deep_extend(custom_params, headers)
+        params =  deep_extend(custom_params, headers)
         return self._get_events(params)
 
     def _get_events(self, params):
@@ -75,7 +76,7 @@ class Yahoo(bpfeeder.Feeder):
         for req_data_field in [x for x in params['req_data_fields'] if x!='formatted_date']:
             hist = pd.DataFrame.from_dict(hist_events[req_data_field]).T
             hist = hist[['amount']]
-            data_field = self.find_key_by_value(hist_fields_dct, req_data_field)
+            data_field = find_key_by_value(hist_fields_dct, req_data_field)
             hist.columns = [data_field]
             hist.index = pd.to_datetime(hist.index)
             hist.index.name = 'DATE'

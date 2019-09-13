@@ -2,7 +2,7 @@ import bpfeeder
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-import numpy as np
+from bpfeeder.utils import deep_extend
 
 hist_fields_dct = {
     "DATE": "날짜",
@@ -28,7 +28,7 @@ chart_time_interval_dct = {
 
 
 
-class Naver(bpfeeder.Feeder):
+class naver(bpfeeder.Feeder):
     urls = {
         'ohlcv': 'http://finance.naver.com/item/sise_day.nhn?code=',
         'item': 'https://finance.naver.com/item/main.nhn?code=',
@@ -36,7 +36,7 @@ class Naver(bpfeeder.Feeder):
     }
 
     def get_ohlcv(self, symbol, params={}):
-        custom_params = self.deep_extend(self.ohlcv_headers, params)
+        custom_params = deep_extend(self.ohlcv_headers, params)
 
         headers = {
             'url': self.urls['chart'],
@@ -45,7 +45,7 @@ class Naver(bpfeeder.Feeder):
             'frequency': chart_time_interval_dct[custom_params['frequency']],
         }
 
-        params = self.deep_extend(custom_params, headers)
+        params = deep_extend(custom_params, headers)
         return self._get_ohlcv(params)
 
     def _get_ohlcv(self, params):
@@ -72,7 +72,7 @@ class Naver(bpfeeder.Feeder):
         return df.loc[cond1 & cond2, ]
 
     def get_ohlcv_curl(self, symbol, params={}):
-        custom_params = self.deep_extend(self.ohlcv_headers, params)
+        custom_params = deep_extend(self.ohlcv_headers, params)
 
         headers = {
             'url': self.urls['ohlcv'],
@@ -82,7 +82,7 @@ class Naver(bpfeeder.Feeder):
             'frequency': time_interval_dct[custom_params['frequency']],
         }
 
-        params = self.deep_extend(custom_params, headers)
+        params = deep_extend(custom_params, headers)
         return self._get_ohlcv(params)
 
     def _get_ohlcv_curl(self, params):
@@ -129,9 +129,5 @@ class Naver(bpfeeder.Feeder):
             print(e)
         return None
 
-def main():
-   print(Naver().get_chart(symbol="005380"))
-   #print(Naver().get_events(symbol="005380.KS"))
-
 if __name__ == '__main__':
-    main()
+    print(naver().get_ohlcv(symbol="005380"))
