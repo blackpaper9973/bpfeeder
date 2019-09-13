@@ -6,7 +6,6 @@ import re
 import pyautogui
 import pywinauto
 from win32com import client
-import backtrader.feeds as btfeeds
 
 stock_chart_fields_dct = {
             "DATE": 0, "TIME": 1, "OPEN": 2, "HIGH": 3, "LOW": 4, "CLOSE": 5, "DIFF": 6,

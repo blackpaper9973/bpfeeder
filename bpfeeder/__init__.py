@@ -1,11 +1,16 @@
 from .feeder import Feeder
 from .yahoo import yahoo
 from .naver import naver
+from .symbol import *
 
 exchanges = [
     'yahoo',
     'naver'
 ]
 
-__all__ = exchanges
+symbols = [
+    'BloombergSymbol'
+]
+
+__all__ = exchanges + symbols
 

@@ -1,6 +1,5 @@
 from datetime import datetime as dt
 
-
 class Feeder:
     ohlcv_headers = {
         'symbol': None,
