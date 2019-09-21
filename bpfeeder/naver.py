@@ -69,6 +69,9 @@ class naver(bpfeeder.Feeder):
         cond1 = df.index >= params['start_date']
         cond2 = df.index <= params['end_date']
 
+        for column in df.columns:
+            df[column] = pd.to_numeric(df[column])
+            
         return df.loc[cond1 & cond2, ]
 
     def get_ohlcv_curl(self, symbol, params={}):

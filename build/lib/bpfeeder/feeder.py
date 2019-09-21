@@ -42,7 +42,6 @@ class Feeder:
         return result
 
     def _get_ohlcv(self, params):
-        print(params)
         pass
 
     def get_ohlcv(self, code, params={}):

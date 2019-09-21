@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name             = 'bpfeeder',
-    version          = '0.0.1',
+    version          = '0.0.4',
     install_requires = ['investpy', 'yahoofinancials'],
     description      = 'Datafeeder for Financidal Data Collection',
     author           = 'Kim jinho',

@@ -15,3 +15,14 @@ def find_key_by_value(dic, val):
         if val == value:
             return key
     return "key doesn't exist"
+
+def adjust(date, close, adj_close, in_col, rounding=4):
+    '''
+    If using forex or Crypto - Change the rounding accordingly!
+    '''
+    try:
+        factor = adj_close / close
+        return round(in_col * factor, rounding)
+    except ZeroDivisionError:
+        print('WARNING: DIRTY DATA >> {} Close: {} | Adj Close {} | in_col: {}'.format(date, close, adj_close, in_col))
+        return 0

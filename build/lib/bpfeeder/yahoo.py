@@ -1,11 +1,13 @@
 import bpfeeder
 from yahoofinancials import YahooFinancials
 import pandas as pd
-from bpfeeder.utils import deep_extend, find_key_by_value
+import numpy as np
+from bpfeeder.utils import deep_extend, find_key_by_value, adjust
 
 hist_fields_dct = {
     "DATE": "formatted_date",
-    "CLOSE": "adjclose",
+    "ADJ_CLOSE": "adjclose",
+    "CLOSE": "close",
     "OPEN": "open",
     "HIGH": "high",
     "LOW": "low",
@@ -19,10 +21,24 @@ time_interval_dct = {
     "1M": "monethly"
 }
 
+adj_params = {
+    'round': True,
+    'decimals': 2,
+    'OPEN': 'OPEN',
+    'HIGH': 'HIGH',
+    'LOW': 'LOW',
+    'CLOSE': 'CLOSE',
+    'ADJ_CLOSE': 'ADJ_CLOSE',
+    'VOLUME': 'VOLUME'
+}
+
 class yahoo(bpfeeder.Feeder):
 
     def get_ohlcv(self, symbol, params={}):
         custom_params = deep_extend(self.ohlcv_headers, params)
+        custom_params['data_fields'].append('ADJ_CLOSE') if custom_params['adjusted'] == True and 'ADJ_CLOSE' not in \
+        custom_params['data_fields'] else True
+
         headers = {
             'symbol': symbol,
             'data_fields': custom_params['data_fields'],
@@ -32,6 +48,28 @@ class yahoo(bpfeeder.Feeder):
 
         params = deep_extend(custom_params, headers)
         return self._get_ohlcv(params)
+
+    def _adjust_ohlcv(self, df, rounding=4):
+        """
+        Yahoo Returns adj-price only close.
+        We adjust other prices using adj-close and raw close.
+
+        :param df: Having cols [OPEN, HIGH, LOW, CLOSE, ADJ_CLOSE, VOLUME]
+        :return: adj_df: Having cols [OPEN, HIGH, LOW, CLOSE, VOLUME]
+        """
+        
+        # Adjust the rest of the data
+        df[adj_params['OPEN']] = np.vectorize(adjust)(df.index, df[adj_params['CLOSE']], df[adj_params['ADJ_CLOSE']],
+                                                df[adj_params['OPEN']], rounding=rounding)
+        df[adj_params['HIGH']] = np.vectorize(adjust)(df.index, df[adj_params['CLOSE']], df[adj_params['ADJ_CLOSE']],
+                                                df[adj_params['HIGH']], rounding=rounding)
+        df[adj_params['LOW']] = np.vectorize(adjust)(df.index, df[adj_params['CLOSE']], df[adj_params['ADJ_CLOSE']],
+                                                df[adj_params['LOW']], rounding=rounding)
+        df[adj_params['CLOSE']] = df[adj_params['ADJ_CLOSE']]
+
+        # Extract the colums we want to work with and rename them.
+        df = df[[adj_params['OPEN'], adj_params['HIGH'], adj_params['LOW'], adj_params['CLOSE'], adj_params['VOLUME']]]
+        return df
 
     def _get_ohlcv(self, params):
         yf = YahooFinancials([params['symbol']])
@@ -47,8 +85,12 @@ class yahoo(bpfeeder.Feeder):
         df.index = pd.to_datetime(df.index)
 
         for column in df.columns:
-            df[column] = pd.to_numeric(df[column])
-        return df
+            try:
+                df[column] = pd.to_numeric(df[column])
+            except:
+                print(column)
+
+        return self._adjust_ohlcv(df) if params['adjusted'] == True else df
 
     def get_events(self, symbol, params={}):
         custom_params = deep_extend(self.events_headers, params)
