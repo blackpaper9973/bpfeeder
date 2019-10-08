@@ -3,8 +3,8 @@ from datetime import datetime as dt
 class Feeder:
     ohlcv_headers = {
         'symbol': None,
-        'start_date': dt(2015, 1, 1).strftime("%Y-%m-%d"),
-        'end_date': dt.now().strftime("%Y-%m-%d"),
+        'start_date': dt(2015, 1, 1),
+        'end_date': dt.now(),
         'limit': (dt.now() - dt(2015, 1, 1)).days,
         'data_fields': ["DATE", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"],
         'frequency': '1D',
@@ -13,8 +13,8 @@ class Feeder:
 
     events_headers = {
         'symbol': None,
-        'start_date': dt(2015, 1, 1).strftime("%Y-%m-%d"),
-        'end_date': dt.now().strftime("%Y-%m-%d"),
+        'start_date': dt(2015, 1, 1),
+        'end_date': dt.now(),
         'data_fields': ["DATE", "DIVIDENDS"]
     }
     urls = {

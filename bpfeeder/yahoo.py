@@ -3,6 +3,7 @@ from yahoofinancials import YahooFinancials
 import pandas as pd
 import numpy as np
 from bpfeeder.utils import deep_extend, find_key_by_value, adjust
+import copy
 
 hist_fields_dct = {
     "DATE": "formatted_date",
@@ -35,7 +36,8 @@ adj_params = {
 class yahoo(bpfeeder.Feeder):
 
     def get_ohlcv(self, symbol, params={}):
-        custom_params = deep_extend(self.ohlcv_headers, params)
+        custom_params = copy.deepcopy(self.ohlcv_headers)
+        custom_params.update(params)
         custom_params['data_fields'].append('ADJ_CLOSE') if custom_params['adjusted'] == True and 'ADJ_CLOSE' not in \
         custom_params['data_fields'] else True
 
@@ -46,8 +48,8 @@ class yahoo(bpfeeder.Feeder):
             'frequency': time_interval_dct[custom_params['frequency']],
         }
 
-        params = deep_extend(custom_params, headers)
-        return self._get_ohlcv(params)
+        custom_params.update(headers)
+        return self._get_ohlcv(custom_params)
 
     def _adjust_ohlcv(self, df, rounding=4):
         """
@@ -59,23 +61,18 @@ class yahoo(bpfeeder.Feeder):
         """
         
         # Adjust the rest of the data
-        df[adj_params['OPEN']] = np.vectorize(adjust)(df.index, df[adj_params['CLOSE']], df[adj_params['ADJ_CLOSE']],
-                                                df[adj_params['OPEN']], rounding=rounding)
-        df[adj_params['HIGH']] = np.vectorize(adjust)(df.index, df[adj_params['CLOSE']], df[adj_params['ADJ_CLOSE']],
-                                                df[adj_params['HIGH']], rounding=rounding)
-        df[adj_params['LOW']] = np.vectorize(adjust)(df.index, df[adj_params['CLOSE']], df[adj_params['ADJ_CLOSE']],
-                                                df[adj_params['LOW']], rounding=rounding)
-        df[adj_params['CLOSE']] = df[adj_params['ADJ_CLOSE']]
+        for adj_col in [col for col in df.columns if col not in ['CLOSE', 'ADJ_CLOSE']]:
+            df[adj_col] = np.vectorize(adjust)(df.index, df[adj_params['CLOSE']], df[adj_params['ADJ_CLOSE']],
+                                               df[adj_col], rounding=rounding)
 
-        # Extract the colums we want to work with and rename them.
-        df = df[[adj_params['OPEN'], adj_params['HIGH'], adj_params['LOW'], adj_params['CLOSE'], adj_params['VOLUME']]]
-        return df
+        df[adj_params['CLOSE']] = np.round(df[adj_params['ADJ_CLOSE']], decimals=rounding)
+        return df[[col for col in df.columns if col not in ['ADJ_CLOSE']]]
 
     def _get_ohlcv(self, params):
         yf = YahooFinancials([params['symbol']])
         hist_price = yf.get_historical_price_data(
-            start_date=params['start_date'],
-            end_date=params['end_date'],
+            start_date=params['start_date'].strftime("%Y-%m-%d"),
+            end_date=params['end_date'].strftime("%Y-%m-%d"),
             time_interval=params['frequency'],)[params['symbol']]['prices']
 
         df = pd.DataFrame.from_dict(hist_price)
@@ -107,8 +104,8 @@ class yahoo(bpfeeder.Feeder):
     def _get_events(self, params):
         yf = YahooFinancials([params['symbol']])
         hist_events = yf.get_historical_price_data(
-            start_date=params['start_date'],
-            end_date=params['end_date'],
+            start_date=params['start_date'].strftime("%Y-%m-%d"),
+            end_date=params['end_date'].strftime("%Y-%m-%d"),
             time_interval=params['frequency'])[params['symbol']]['eventsData']
 
         hist_events = hist_events

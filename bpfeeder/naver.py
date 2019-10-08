@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 from bpfeeder.utils import deep_extend
+import copy
 
 hist_fields_dct = {
     "DATE": "날짜",
@@ -36,17 +37,18 @@ class naver(bpfeeder.Feeder):
     }
 
     def get_ohlcv(self, symbol, params={}):
-        custom_params = deep_extend(self.ohlcv_headers, params)
-
+        custom_params = copy.deepcopy(self.ohlcv_headers)
+        custom_params.update(params)
         headers = {
             'url': self.urls['chart'],
             'symbol': symbol,
             'data_fields': custom_params['data_fields'],
             'frequency': chart_time_interval_dct[custom_params['frequency']],
+            'limit': (custom_params['end_date'] - custom_params['start_date']).days,
+            'adjusted': False
         }
-
-        params = deep_extend(custom_params, headers)
-        return self._get_ohlcv(params)
+        custom_params.update(headers)
+        return self._get_ohlcv(custom_params)
 
     def _get_ohlcv(self, params):
         url = params['url'].format(str(params['symbol']), params['frequency'], params['limit'])
@@ -61,13 +63,14 @@ class naver(bpfeeder.Feeder):
             row = item['data'].split('|')
             matrix.append(row)
 
-        df = pd.DataFrame(data=matrix, columns=params['data_fields'])
+        df = pd.DataFrame(data=matrix, columns=['DATE', 'OPEN', 'HIGH', 'LOW', 'CLOSE', 'VOLUME'])
+        df = df[params['data_fields']]
         df.set_index(keys='DATE', drop=True, inplace=True)
         df.index = pd.to_datetime(df.index, format="%Y%m%d")
         df = df.sort_index(ascending=True)
 
-        cond1 = df.index >= params['start_date']
-        cond2 = df.index <= params['end_date']
+        cond1 = df.index >= params['start_date'].strftime("%Y-%m-%d")
+        cond2 = df.index <= params['end_date'].strftime("%Y-%m-%d")
 
         for column in df.columns:
             df[column] = pd.to_numeric(df[column])
@@ -100,7 +103,7 @@ class naver(bpfeeder.Feeder):
         df = None
         for page in range(1, max_pg_num + 1):
             _hist_price = self._parse_page(url, page)
-            _hist_price_filtered = _hist_price[_hist_price['날짜'] > params['start_date']]
+            _hist_price_filtered = _hist_price[_hist_price['날짜'] > params['start_date'].strftime("%Y-%m-%d")]
             if df is None:
                 df = _hist_price_filtered
             else:
@@ -113,8 +116,8 @@ class naver(bpfeeder.Feeder):
         df.set_index(keys='DATE', drop=True, inplace=True)
         df = df.sort_index(ascending=True)
 
-        cond1 = df.index >= params['start_date']
-        cond2 = df.index <= params['end_date']
+        cond1 = df.index >= params['start_date'].strftime("%Y-%m-%d")
+        cond2 = df.index <= params['end_date'].strftime("%Y-%m-%d")
 
         return df.loc[cond1 & cond2, ]
 

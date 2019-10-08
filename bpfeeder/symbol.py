@@ -15,6 +15,8 @@ from bpfeeder.utils import deep_extend
 
 """
 
+
+
 class SymbolAbstract:
     base = {
         'info': {
@@ -36,6 +38,11 @@ class SymbolAbstract:
         base = deep_extend(self.base, params)
         return base['info']['symbol']
 
+
+# Dont Forget '.'
+suffix_yahoo_dic = {'US': '', 'IM': 'MI', 'DC': 'CO', 'FH': 'HE', 'BZ': 'SA', 'RM': 'ME', 'CI': 'SN',
+                    'AR': 'BA', 'CN': 'TO', 'SS': 'ST', 'LN': 'L', 'MM': 'MX', 'NA': 'AS', 'SM': 'MC', 'NO': 'OL',
+                    'CH': 'SS', 'GR': 'DE'}
 
 class BloombergSymbol(SymbolAbstract):
     def __init__(self, symbol, params={}):
@@ -65,8 +72,15 @@ class BloombergSymbol(SymbolAbstract):
 
     def yahoo(self, params={}):
         base = deep_extend(self.base, params)
-        return base['symbol'] if base['info']['suffix'] == 'US' \
-            else '{}.{}'.format(base['symbol'], base['info']['suffix'])
+        base_symbol = base['symbol']
+        base_symbol = base_symbol.replace('/', '-')
+        if base['info']['suffix'] == 'US':
+            y_symbol = '{}'.format(base_symbol)
+        elif suffix_yahoo_dic.get(base['info']['suffix'], None) is not None:
+            y_symbol = '{}.{}'.format(base_symbol, suffix_yahoo_dic[base['info']['suffix']])
+        else:
+            y_symbol = '{}.{}'.format(base_symbol, base['info']['suffix'])
+        return y_symbol
 
     def naver(self, params={}):
         base = deep_extend(self.base, params)
